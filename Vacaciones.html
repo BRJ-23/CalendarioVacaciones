@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendario Laboral 2026</title>
+    <title>Vacaciones 2026</title>
     <style>
         :root {
             --holiday-color: #e74c3c; /* Rojo festivo */
             --convenio-color: #e67e22; /* Naranja convenio */
             --weekend-bg: #f8f9fa;
+            --prio-color: #0d47a1; /* Azul Oscuro */
+            --flex-color: #81d4fa; /* Azul Claro */
             --border-color: #ddd;
         }
 
@@ -19,31 +21,84 @@
             text-align: center;
         }
 
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
+        h1 { color: #333; margin-bottom: 20px; }
+
+        /* --- ESTILOS DEL PANEL DE CONTROL --- */
+        .control-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin: 0 auto 30px auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
 
-        .legend {
+        .inputs-row {
             display: flex;
             justify-content: center;
             gap: 20px;
-            margin-bottom: 30px;
-            font-size: 0.9em;
+            flex-wrap: wrap;
         }
 
-        .legend-item {
+        .input-group {
             display: flex;
-            align-items: center;
-            gap: 8px;
+            flex-direction: column;
+            align-items: flex-start;
         }
 
-        .dot {
-            width: 15px;
-            height: 15px;
-            border-radius: 50%;
+        .input-group label {
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
         }
 
+        .input-group input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 80px;
+            text-align: center;
+        }
+
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            background: #eee;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .mode-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            box-shadow: 0 0 0 2px #333;
+            transform: scale(1.05);
+        }
+
+        /* Colores de los botones */
+        .btn-prio { background-color: var(--prio-color); color: white; }
+        .btn-flex { background-color: var(--flex-color); color: #003; }
+        .btn-erase { background-color: #bdc3c7; color: #333; }
+
+        .counters {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        /* --- ESTILOS DEL CALENDARIO --- */
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -87,55 +142,67 @@
             padding: 8px 0;
             border-radius: 4px;
             margin: 1px;
-            cursor: default;
+            cursor: pointer; /* Cursor de mano */
+            user-select: none;
         }
 
-        .weekend {
-            background-color: var(--weekend-bg);
-            color: #7f8c8d;
+        .day:hover {
+            background-color: #eee;
         }
 
-        .holiday {
-            background-color: var(--holiday-color);
-            color: white;
-            font-weight: bold;
-            position: relative;
-        }
+        .weekend { background-color: var(--weekend-bg); color: #7f8c8d; cursor: not-allowed; }
+        .holiday { background-color: var(--holiday-color); color: white; cursor: not-allowed; }
+        .convenio { background-color: var(--convenio-color); color: white; cursor: not-allowed; }
 
-        .convenio {
-            background-color: var(--convenio-color);
-            color: white;
-            font-weight: bold;
-        }
+        /* Clases para vacaciones */
+        .vac-prio { background-color: var(--prio-color) !important; color: white; }
+        .vac-flex { background-color: var(--flex-color) !important; color: #003; }
 
-        /* Tooltip para mostrar nombre del festivo */
+        /* Tooltip */
         .holiday:hover::after, .convenio:hover::after {
             content: attr(data-title);
             position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
             background: #333;
             color: white;
             padding: 5px 10px;
             border-radius: 4px;
             font-size: 12px;
-            white-space: nowrap;
             z-index: 10;
+            margin-top: -30px;
             pointer-events: none;
         }
     </style>
 </head>
 <body>
 
-    <h1>Calendario Laboral 2026</h1>
-    
-    <div class="legend">
-        <div class="legend-item">
-            <div class="dot" style="background: var(--holiday-color);"></div> Festivo
+    <h1>Vacaciones 2026</h1>
+
+    <div class="control-panel">
+        <div class="inputs-row">
+            <div class="input-group">
+                <label>Total Vacaciones</label>
+                <input type="number" id="totalInput" value="23" min="0" oninput="calculateDays()">
+            </div>
+            <div class="input-group">
+                <label>Prioritarias (Max)</label>
+                <input type="number" id="prioInput" readonly>
+            </div>
+            <div class="input-group">
+                <label>Flexibles (Resto)</label>
+                <input type="number" id="flexInput" readonly>
+            </div>
         </div>
-        <div class="legend-item">
-            <div class="dot" style="background: var(--convenio-color);"></div> Día de Convenio
+
+        <div class="counters">
+            Uso Prioritarias: <strong id="countPrio">0</strong> | 
+            Uso Flexibles: <strong id="countFlex">0</strong>
+        </div>
+
+        <div class="mode-selector">
+            <span><strong>Modo de Selección:</strong></span>
+            <button class="mode-btn btn-prio active" onclick="setMode('prio')">Prioritarias</button>
+            <button class="mode-btn btn-flex" onclick="setMode('flex')">Flexibles</button>
+            <button class="mode-btn btn-erase" onclick="setMode('erase')">Borrar</button>
         </div>
     </div>
 
@@ -143,9 +210,9 @@
 
     <script>
         const year = 2026;
+        let currentMode = 'prio'; // 'prio', 'flex', 'erase'
         
-        // Formato de fechas: Mes (0-11) - Día
-        // Nota: Enero es 0, Febrero es 1, etc.
+        // Configuración de festivos
         const holidays = {
             "0-1": { name: "Año Nuevo", type: "holiday" },
             "0-6": { name: "Día de Reyes", type: "holiday" },
@@ -168,17 +235,91 @@
         const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
         const dayNames = ["L", "M", "X", "J", "V", "S", "D"];
 
+        // Elementos del DOM
         const calendarContainer = document.getElementById('calendar');
+        const totalInput = document.getElementById('totalInput');
+        const prioInput = document.getElementById('prioInput');
+        const flexInput = document.getElementById('flexInput');
+        const countPrioDisplay = document.getElementById('countPrio');
+        const countFlexDisplay = document.getElementById('countFlex');
 
-        for (let month = 0; month < 12; month++) {
-            const monthDiv = document.createElement('div');
-            monthDiv.className = 'month';
+        // Lógica de cálculo de días
+        function calculateDays() {
+            let total = parseInt(totalInput.value) || 0;
+            
+            // Regla: Prioritarias son 15 o el total si es menor
+            let prio = (total < 15) ? total : 15;
+            let flex = total - prio;
 
-            // Header del mes
-            const header = document.createElement('div');
-            header.className = 'month-header';
-            header.textContent = monthNames[month];
-            monthDiv.appendChild(header);
+            prioInput.value = prio;
+            flexInput.value = flex;
+            
+            updateCounters(); // Actualizar alertas de cupo
+        }
+
+        // Cambio de modo (Pincel)
+        function setMode(mode) {
+            currentMode = mode;
+            // Actualizar estilo de botones
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            if(mode === 'prio') document.querySelector('.btn-prio').classList.add('active');
+            if(mode === 'flex') document.querySelector('.btn-flex').classList.add('active');
+            if(mode === 'erase') document.querySelector('.btn-erase').classList.add('active');
+        }
+
+        // Contar días marcados
+        function updateCounters() {
+            const prioUsed = document.querySelectorAll('.vac-prio').length;
+            const flexUsed = document.querySelectorAll('.vac-flex').length;
+            
+            const prioLimit = parseInt(prioInput.value);
+            const flexLimit = parseInt(flexInput.value);
+
+            countPrioDisplay.textContent = `${prioUsed} / ${prioLimit}`;
+            countFlexDisplay.textContent = `${flexUsed} / ${flexLimit}`;
+
+            // Alertas visuales (color rojo si te pasas)
+            countPrioDisplay.style.color = (prioUsed > prioLimit) ? 'red' : '#666';
+            countFlexDisplay.style.color = (flexUsed > flexLimit) ? 'red' : '#666';
+        }
+
+        // Click en un día
+        function handleDayClick(e) {
+            const el = e.target;
+            
+            // Si es festivo, fin de semana o vacío, no hacer nada
+            if (el.classList.contains('holiday') || 
+                el.classList.contains('convenio') || 
+                el.classList.contains('weekend') ||
+                !el.classList.contains('day')) {
+                return;
+            }
+
+            if (currentMode === 'erase') {
+                el.classList.remove('vac-prio', 'vac-flex');
+            } else if (currentMode === 'prio') {
+                el.classList.remove('vac-flex'); // Quitar el otro tipo si existe
+                el.classList.toggle('vac-prio');
+            } else if (currentMode === 'flex') {
+                el.classList.remove('vac-prio'); // Quitar el otro tipo si existe
+                el.classList.toggle('vac-flex');
+            }
+
+            updateCounters();
+        }
+
+        // Generar Calendario
+        function initCalendar() {
+            calendarContainer.innerHTML = ''; // Limpiar
+
+            for (let month = 0; month < 12; month++) {
+                const monthDiv = document.createElement('div');
+                monthDiv.className = 'month';
+
+                const header = document.createElement('div');
+                header.className = 'month-header';
+                header.textContent = monthNames[month];
+                monthDiv.appendChild(header);
 
             // Grid de días
             const daysGrid = document.createElement('div');
@@ -186,30 +327,30 @@
 
             // Nombres de los días (L M X...)
             dayNames.forEach(day => {
-                const dayNameDiv = document.createElement('div');
-                dayNameDiv.className = 'day-name';
-                dayNameDiv.textContent = day;
-                daysGrid.appendChild(dayNameDiv);
-            });
+                    const d = document.createElement('div');
+                    d.className = 'day-name';
+                    d.textContent = day;
+                    daysGrid.appendChild(d);
+                });
 
-            // Lógica para rellenar los días
-            const firstDay = new Date(year, month, 1);
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            
-            // Ajuste para que la semana empiece en Lunes (0) en vez de Domingo
-            let startDayIndex = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+                // Lógica para rellenar los días
+                const firstDay = new Date(year, month, 1);
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                
+                // Ajuste para que la semana empiece en Lunes (0) en vez de Domingo
+                let startDayIndex = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
 
-            // Espacios vacíos antes del día 1
-            for (let i = 0; i < startDayIndex; i++) {
-                const empty = document.createElement('div');
-                daysGrid.appendChild(empty);
-            }
+                // Espacios vacíos antes del día 1
+                for (let i = 0; i < startDayIndex; i++) {
+                    daysGrid.appendChild(document.createElement('div'));
+                }
 
-            // Días del mes
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dayDiv = document.createElement('div');
-                dayDiv.className = 'day';
-                dayDiv.textContent = day;
+                // Días del mes
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayDiv = document.createElement('div');
+                    dayDiv.className = 'day';
+                    dayDiv.textContent = day;
+                    dayDiv.onclick = handleDayClick; // Evento click
 
                 const currentKey = `${month}-${day}`;
                 
@@ -218,9 +359,9 @@
                 const currentDayObj = new Date(year, month, day);
                 const dayOfWeek = currentDayObj.getDay(); // 0 domingo, 6 sábado
 
-                if (dayOfWeek === 0 || dayOfWeek === 6) {
-                    dayDiv.classList.add('weekend');
-                }
+                    if (dayOfWeek === 0 || dayOfWeek === 6) {
+                        dayDiv.classList.add('weekend');
+                    }
 
                 // Verificar si es festivo
                 if (holidays[currentKey]) {
@@ -233,7 +374,13 @@
 
             monthDiv.appendChild(daysGrid);
             calendarContainer.appendChild(monthDiv);
+            }
         }
+
+        // Inicialización
+        calculateDays();
+        initCalendar();
+
     </script>
 </body>
 </html>
