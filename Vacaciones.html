@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario Laboral 2026</title>
+    <style>
+        :root {
+            --holiday-color: #e74c3c; /* Rojo festivo */
+            --convenio-color: #e67e22; /* Naranja convenio */
+            --weekend-bg: #f8f9fa;
+            --border-color: #ddd;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .month {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            padding-bottom: 15px;
+        }
+
+        .month-header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            padding: 10px;
+            font-size: 0.9em;
+        }
+
+        .day-name {
+            font-weight: bold;
+            color: #7f8c8d;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 5px;
+        }
+
+        .day {
+            padding: 8px 0;
+            border-radius: 4px;
+            margin: 1px;
+            cursor: default;
+        }
+
+        .weekend {
+            background-color: var(--weekend-bg);
+            color: #7f8c8d;
+        }
+
+        .holiday {
+            background-color: var(--holiday-color);
+            color: white;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .convenio {
+            background-color: var(--convenio-color);
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Tooltip para mostrar nombre del festivo */
+        .holiday:hover::after, .convenio:hover::after {
+            content: attr(data-title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 10;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Calendario Laboral 2026</h1>
+    
+    <div class="legend">
+        <div class="legend-item">
+            <div class="dot" style="background: var(--holiday-color);"></div> Festivo
+        </div>
+        <div class="legend-item">
+            <div class="dot" style="background: var(--convenio-color);"></div> Día de Convenio
+        </div>
+    </div>
+
+    <div class="calendar-grid" id="calendar"></div>
+
+    <script>
+        const year = 2026;
+        
+        // Formato de fechas: Mes (0-11) - Día
+        // Nota: Enero es 0, Febrero es 1, etc.
+        const holidays = {
+            "0-1": { name: "Año Nuevo", type: "holiday" },
+            "0-6": { name: "Día de Reyes", type: "holiday" },
+            "2-19": { name: "San José", type: "holiday" },           // Marzo
+            "2-28": { name: "La Reconquista", type: "holiday" },     // Marzo
+            "3-2":  { name: "Jueves Santo", type: "holiday" },       // Abril
+            "3-3":  { name: "Viernes Santo", type: "holiday" },      // Abril
+            "4-1":  { name: "Fiesta del Trabajo", type: "holiday" }, // Mayo
+            "5-24": { name: "San Xoán", type: "holiday" },           // Junio
+            "6-25": { name: "Día Nacional de Galicia", type: "holiday" }, // Julio
+            "7-15": { name: "Asunción de la Virgen", type: "holiday" },   // Agosto
+            "7-17": { name: "San Roque", type: "holiday" },               // Agosto
+            "9-12": { name: "Fiesta Nacional de España", type: "holiday" }, // Octubre
+            "11-8": { name: "Inmaculada Concepción", type: "holiday" },     // Diciembre
+            "11-24": { name: "Nochebuena", type: "convenio" },              // Diciembre
+            "11-25": { name: "Navidad", type: "holiday" },                  // Diciembre
+            "11-31": { name: "Fin de año", type: "convenio" }               // Diciembre
+        };
+
+        const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        const dayNames = ["L", "M", "X", "J", "V", "S", "D"];
+
+        const calendarContainer = document.getElementById('calendar');
+
+        for (let month = 0; month < 12; month++) {
+            const monthDiv = document.createElement('div');
+            monthDiv.className = 'month';
+
+            // Header del mes
+            const header = document.createElement('div');
+            header.className = 'month-header';
+            header.textContent = monthNames[month];
+            monthDiv.appendChild(header);
+
+            // Grid de días
+            const daysGrid = document.createElement('div');
+            daysGrid.className = 'days-grid';
+
+            // Nombres de los días (L M X...)
+            dayNames.forEach(day => {
+                const dayNameDiv = document.createElement('div');
+                dayNameDiv.className = 'day-name';
+                dayNameDiv.textContent = day;
+                daysGrid.appendChild(dayNameDiv);
+            });
+
+            // Lógica para rellenar los días
+            const firstDay = new Date(year, month, 1);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            // Ajuste para que la semana empiece en Lunes (0) en vez de Domingo
+            let startDayIndex = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+
+            // Espacios vacíos antes del día 1
+            for (let i = 0; i < startDayIndex; i++) {
+                const empty = document.createElement('div');
+                daysGrid.appendChild(empty);
+            }
+
+            // Días del mes
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'day';
+                dayDiv.textContent = day;
+
+                const currentKey = `${month}-${day}`;
+                
+                // Calcular si es fin de semana para estilo gris
+                // Reconstruimos fecha para saber el día de la semana
+                const currentDayObj = new Date(year, month, day);
+                const dayOfWeek = currentDayObj.getDay(); // 0 domingo, 6 sábado
+
+                if (dayOfWeek === 0 || dayOfWeek === 6) {
+                    dayDiv.classList.add('weekend');
+                }
+
+                // Verificar si es festivo
+                if (holidays[currentKey]) {
+                    dayDiv.classList.add(holidays[currentKey].type);
+                    dayDiv.setAttribute('data-title', holidays[currentKey].name);
+                }
+
+                daysGrid.appendChild(dayDiv);
+            }
+
+            monthDiv.appendChild(daysGrid);
+            calendarContainer.appendChild(monthDiv);
+        }
+    </script>
+</body>
+</html>
