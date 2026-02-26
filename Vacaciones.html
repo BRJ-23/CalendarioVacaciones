@@ -121,6 +121,14 @@
             padding: 10px;
             font-weight: bold;
             text-transform: uppercase;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* Estilo especial para el encabezado de 2027 */
+        .month-header.next-year {
+            background-color: #8e44ad; /* Un color morado para diferenciar 2027 */
         }
 
         .days-grid {
@@ -142,7 +150,7 @@
             padding: 8px 0;
             border-radius: 4px;
             margin: 1px;
-            cursor: pointer; /* Cursor de mano */
+            cursor: pointer;
             user-select: none;
         }
 
@@ -209,10 +217,11 @@
     <div class="calendar-grid" id="calendar"></div>
 
     <script>
-        const year = 2026;
-        let currentMode = 'prio'; // 'prio', 'flex', 'erase'
+        const baseYear = 2026;
+        let currentMode = 'prio'; 
         
-        // Configuración de festivos
+        // Festivos (Mes-Día). 
+        // Nota: Enero es 0.
         const holidays = {
             "0-1": { name: "Año Nuevo", type: "holiday" },
             "0-6": { name: "Día de Reyes", type: "holiday" },
@@ -250,11 +259,9 @@
             // Regla: Prioritarias son 15 o el total si es menor
             let prio = (total < 15) ? total : 15;
             let flex = total - prio;
-
             prioInput.value = prio;
             flexInput.value = flex;
-            
-            updateCounters(); // Actualizar alertas de cupo
+            updateCounters();
         }
 
         // Cambio de modo (Pincel)
@@ -271,7 +278,6 @@
         function updateCounters() {
             const prioUsed = document.querySelectorAll('.vac-prio').length;
             const flexUsed = document.querySelectorAll('.vac-flex').length;
-            
             const prioLimit = parseInt(prioInput.value);
             const flexLimit = parseInt(flexInput.value);
 
@@ -310,15 +316,35 @@
 
         // Generar Calendario
         function initCalendar() {
-            calendarContainer.innerHTML = ''; // Limpiar
+            calendarContainer.innerHTML = ''; 
 
-            for (let month = 0; month < 12; month++) {
+            // Generamos 13 meses: 0 a 11 (2026) y 12 (Enero 2027)
+            const totalMonthsToRender = 13;
+
+            for (let i = 0; i < totalMonthsToRender; i++) {
+                let currentYear = baseYear;
+                let monthIndex = i;
+
+                // Si i es 12, es Enero del año siguiente
+                if (i === 12) {
+                    currentYear = baseYear + 1;
+                    monthIndex = 0; // Enero
+                }
+
                 const monthDiv = document.createElement('div');
                 monthDiv.className = 'month';
 
                 const header = document.createElement('div');
                 header.className = 'month-header';
-                header.textContent = monthNames[month];
+                
+                // Si es el año siguiente, cambiamos el estilo y el texto
+                if (currentYear > baseYear) {
+                    header.textContent = `${monthNames[monthIndex]} ${currentYear}`;
+                    header.classList.add('next-year');
+                } else {
+                    header.textContent = monthNames[monthIndex];
+                }
+                
                 monthDiv.appendChild(header);
 
             // Grid de días
@@ -333,47 +359,41 @@
                     daysGrid.appendChild(d);
                 });
 
-                // Lógica para rellenar los días
-                const firstDay = new Date(year, month, 1);
-                const daysInMonth = new Date(year, month + 1, 0).getDate();
-                
-                // Ajuste para que la semana empiece en Lunes (0) en vez de Domingo
+                const firstDay = new Date(currentYear, monthIndex, 1);
+                const daysInMonth = new Date(currentYear, monthIndex + 1, 0).getDate();
                 let startDayIndex = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
 
-                // Espacios vacíos antes del día 1
-                for (let i = 0; i < startDayIndex; i++) {
+                for (let k = 0; k < startDayIndex; k++) {
                     daysGrid.appendChild(document.createElement('div'));
                 }
 
-                // Días del mes
                 for (let day = 1; day <= daysInMonth; day++) {
                     const dayDiv = document.createElement('div');
                     dayDiv.className = 'day';
                     dayDiv.textContent = day;
-                    dayDiv.onclick = handleDayClick; // Evento click
+                    dayDiv.onclick = handleDayClick;
 
-                const currentKey = `${month}-${day}`;
-                
-                // Calcular si es fin de semana para estilo gris
-                // Reconstruimos fecha para saber el día de la semana
-                const currentDayObj = new Date(year, month, day);
-                const dayOfWeek = currentDayObj.getDay(); // 0 domingo, 6 sábado
+                    const currentDayObj = new Date(currentYear, monthIndex, day);
+                    const dayOfWeek = currentDayObj.getDay();
 
+                    // Fin de semana
                     if (dayOfWeek === 0 || dayOfWeek === 6) {
                         dayDiv.classList.add('weekend');
                     }
 
-                // Verificar si es festivo
-                if (holidays[currentKey]) {
-                    dayDiv.classList.add(holidays[currentKey].type);
-                    dayDiv.setAttribute('data-title', holidays[currentKey].name);
+                    // Festivos
+                    // Usamos el formato "Mes-Día" para buscar en el objeto holidays.
+                    const holidayKey = `${monthIndex}-${day}`;
+                    if (holidays[holidayKey]) {
+                        dayDiv.classList.add(holidays[holidayKey].type);
+                        dayDiv.setAttribute('data-title', holidays[holidayKey].name);
+                    }
+
+                    daysGrid.appendChild(dayDiv);
                 }
-
-                daysGrid.appendChild(dayDiv);
-            }
-
-            monthDiv.appendChild(daysGrid);
-            calendarContainer.appendChild(monthDiv);
+                
+                monthDiv.appendChild(daysGrid);
+                calendarContainer.appendChild(monthDiv);
             }
         }
 
