@@ -71,6 +71,7 @@
             background: #eee;
             padding: 10px;
             border-radius: 8px;
+            flex-wrap: wrap;
         }
 
         .mode-btn {
@@ -91,6 +92,8 @@
         .btn-prio { background-color: var(--prio-color); color: white; }
         .btn-flex { background-color: var(--flex-color); color: #003; }
         .btn-erase { background-color: #bdc3c7; color: #333; }
+        .btn-save { background-color: #27ae60; color: white; margin-left: 10px; }
+        .btn-load { background-color: #8e44ad; color: white; }
 
         .counters {
             font-size: 0.9em;
@@ -121,15 +124,9 @@
             padding: 10px;
             font-weight: bold;
             text-transform: uppercase;
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
         
-        /* Estilo especial para el encabezado de 2027 */
-        .month-header.next-year {
-            background-color: #8e44ad; /* Un color morado para diferenciar 2027 */
-        }
+        .month-header.next-year { background-color: #8e44ad; }
 
         .days-grid {
             display: grid;
@@ -154,9 +151,7 @@
             user-select: none;
         }
 
-        .day:hover {
-            background-color: #eee;
-        }
+        .day:hover { background-color: #eee; }
 
         .weekend { background-color: var(--weekend-bg); color: #7f8c8d; cursor: not-allowed; }
         .holiday { background-color: var(--holiday-color); color: white; cursor: not-allowed; }
@@ -179,6 +174,9 @@
             margin-top: -30px;
             pointer-events: none;
         }
+
+        /* Input oculto para cargar archivo */
+        #fileInput { display: none; }
     </style>
 </head>
 <body>
@@ -189,7 +187,7 @@
         <div class="inputs-row">
             <div class="input-group">
                 <label>Total Vacaciones</label>
-                <input type="number" id="totalInput" value="23" min="0" oninput="calculateDays()">
+                <input type="number" id="totalInput" value="23" min="0" oninput="calculateDays(); saveLocal();">
             </div>
             <div class="input-group">
                 <label>Prioritarias (Max)</label>
@@ -207,11 +205,16 @@
         </div>
 
         <div class="mode-selector">
-            <span><strong>Modo de Selección:</strong></span>
+            <span><strong>Herramientas:</strong></span>
             <button class="mode-btn btn-prio active" onclick="setMode('prio')">Prioritarias</button>
             <button class="mode-btn btn-flex" onclick="setMode('flex')">Flexibles</button>
             <button class="mode-btn btn-erase" onclick="setMode('erase')">Borrar</button>
+            
+            <div style="width: 20px;"></div> <button class="mode-btn btn-save" onclick="downloadData()">💾 Guardar Datos</button>
+            <button class="mode-btn btn-load" onclick="document.getElementById('fileInput').click()">📂 Cargar Datos</button>
+            <input type="file" id="fileInput" accept=".json" onchange="loadFromFile(this)">
         </div>
+        <div style="font-size: 0.8em; color: #888;">* Los cambios se guardan automáticamente en este navegador. Usa "Guardar Datos" para crear una copia de seguridad.</div>
     </div>
 
     <div class="calendar-grid" id="calendar"></div>
@@ -220,8 +223,6 @@
         const baseYear = 2026;
         let currentMode = 'prio'; 
         
-        // Festivos (Mes-Día). 
-        // Nota: Enero es 0.
         const holidays = {
             "0-1": { name: "Año Nuevo", type: "holiday" },
             "0-6": { name: "Día de Reyes", type: "holiday" },
@@ -252,11 +253,10 @@
         const countPrioDisplay = document.getElementById('countPrio');
         const countFlexDisplay = document.getElementById('countFlex');
 
-        // Lógica de cálculo de días
+        // --- FUNCIONES PRINCIPALES ---
+
         function calculateDays() {
             let total = parseInt(totalInput.value) || 0;
-            
-            // Regla: Prioritarias son 15 o el total si es menor
             let prio = (total < 15) ? total : 15;
             let flex = total - prio;
             prioInput.value = prio;
@@ -267,8 +267,8 @@
         // Cambio de modo (Pincel)
         function setMode(mode) {
             currentMode = mode;
-            // Actualizar estilo de botones
             document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            // No quitamos active a save/load porque son acciones puntuales
             if(mode === 'prio') document.querySelector('.btn-prio').classList.add('active');
             if(mode === 'flex') document.querySelector('.btn-flex').classList.add('active');
             if(mode === 'erase') document.querySelector('.btn-erase').classList.add('active');
@@ -301,24 +301,28 @@
                 return;
             }
 
+            // Identificador único para guardar (año-mes-dia)
+            // Ya que tenemos 2026 y 2027, necesitamos saber el año.
+            // Lo recuperamos del atributo data o del contexto, pero como se generan dinámicamente:
+            // Vamos a añadir un atributo data-id al generar el calendario para facilitar esto.
+
             if (currentMode === 'erase') {
                 el.classList.remove('vac-prio', 'vac-flex');
             } else if (currentMode === 'prio') {
-                el.classList.remove('vac-flex'); // Quitar el otro tipo si existe
+                el.classList.remove('vac-flex');
                 el.classList.toggle('vac-prio');
             } else if (currentMode === 'flex') {
-                el.classList.remove('vac-prio'); // Quitar el otro tipo si existe
+                el.classList.remove('vac-prio');
                 el.classList.toggle('vac-flex');
             }
-
+            
             updateCounters();
+            saveLocal(); // Autoguardado
         }
 
         // Generar Calendario
         function initCalendar() {
             calendarContainer.innerHTML = ''; 
-
-            // Generamos 13 meses: 0 a 11 (2026) y 12 (Enero 2027)
             const totalMonthsToRender = 13;
 
             for (let i = 0; i < totalMonthsToRender; i++) {
@@ -347,12 +351,12 @@
                 
                 monthDiv.appendChild(header);
 
-            // Grid de días
-            const daysGrid = document.createElement('div');
-            daysGrid.className = 'days-grid';
+                 // Grid de días
+                const daysGrid = document.createElement('div');
+                daysGrid.className = 'days-grid';
 
-            // Nombres de los días (L M X...)
-            dayNames.forEach(day => {
+                // Nombres de los días (L M X...)
+                dayNames.forEach(day => {
                     const d = document.createElement('div');
                     d.className = 'day-name';
                     d.textContent = day;
@@ -372,6 +376,10 @@
                     dayDiv.className = 'day';
                     dayDiv.textContent = day;
                     dayDiv.onclick = handleDayClick;
+                    
+                    // ID Único para guardar estado: YYYY-MM-DD
+                    const uniqueId = `${currentYear}-${monthIndex}-${day}`;
+                    dayDiv.setAttribute('id', uniqueId);
 
                     const currentDayObj = new Date(currentYear, monthIndex, day);
                     const dayOfWeek = currentDayObj.getDay();
@@ -395,6 +403,103 @@
                 monthDiv.appendChild(daysGrid);
                 calendarContainer.appendChild(monthDiv);
             }
+            
+            // Después de generar el HTML, cargamos los datos guardados
+            loadLocal();
+        }
+
+        // --- SISTEMA DE GUARDADO (MEMORIA) ---
+
+        // 1. Guardar en LocalStorage
+        function saveLocal() {
+            const data = {
+                totalDays: totalInput.value,
+                prioDays: [],
+                flexDays: []
+            };
+
+            // Buscar todos los días marcados
+            document.querySelectorAll('.vac-prio').forEach(el => data.prioDays.push(el.id));
+            document.querySelectorAll('.vac-flex').forEach(el => data.flexDays.push(el.id));
+
+            localStorage.setItem('vacaciones2026', JSON.stringify(data));
+        }
+
+        // 2. Cargar de LocalStorage
+        function loadLocal() {
+            const saved = localStorage.getItem('vacaciones2026');
+            if (saved) {
+                applyData(JSON.parse(saved));
+            }
+        }
+
+        // 3. Aplicar datos al DOM
+        function applyData(data) {
+            if (!data) return;
+
+            // Restaurar input total
+            if (data.totalDays) {
+                totalInput.value = data.totalDays;
+                calculateDays();
+            }
+
+            // Limpiar marcas actuales
+            document.querySelectorAll('.vac-prio, .vac-flex').forEach(el => {
+                el.classList.remove('vac-prio', 'vac-flex');
+            });
+
+            // Pintar Prioritarias
+            if (data.prioDays) {
+                data.prioDays.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('vac-prio');
+                });
+            }
+
+            // Pintar Flexibles
+            if (data.flexDays) {
+                data.flexDays.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('vac-flex');
+                });
+            }
+            updateCounters();
+        }
+
+        // 4. Descargar archivo JSON (Backup)
+        function downloadData() {
+            // Aseguramos tener lo último
+            saveLocal();
+            const rawData = localStorage.getItem('vacaciones2026');
+            const blob = new Blob([rawData], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "mis_vacaciones_2026.json";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // 5. Cargar desde archivo
+        function loadFromFile(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    applyData(data);
+                    saveLocal(); // Guardar lo cargado en memoria local
+                    alert("Datos cargados correctamente.");
+                } catch (err) {
+                    alert("Error al leer el archivo. Asegúrate de que es el correcto.");
+                }
+            };
+            reader.readAsText(file);
+            input.value = ''; // Reset input
         }
 
         // Inicialización
