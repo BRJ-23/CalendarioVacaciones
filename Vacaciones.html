@@ -153,11 +153,20 @@
 
         .day:hover { background-color: #eee; }
 
+        /* Estados especiales */
         .weekend { background-color: var(--weekend-bg); color: #7f8c8d; cursor: not-allowed; }
         .holiday { background-color: var(--holiday-color); color: white; cursor: not-allowed; }
         .convenio { background-color: var(--convenio-color); color: white; cursor: not-allowed; }
+        
+        /* Nuevo estado: Fuera de rango */
+        .out-of-range {
+            background-color: #e0e0e0;
+            color: #a0a0a0;
+            cursor: not-allowed;
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
 
-        /* Clases para vacaciones */
         .vac-prio { background-color: var(--prio-color) !important; color: white; }
         .vac-flex { background-color: var(--flex-color) !important; color: #003; }
 
@@ -214,7 +223,7 @@
             <button class="mode-btn btn-load" onclick="document.getElementById('fileInput').click()">📂 Cargar Datos</button>
             <input type="file" id="fileInput" accept=".json" onchange="loadFromFile(this)">
         </div>
-        <div style="font-size: 0.8em; color: #888;">* Los cambios se guardan automáticamente en este navegador. Usa "Guardar Datos" para crear una copia de seguridad.</div>
+        <div style="font-size: 0.8em; color: #888;">* Solo se pueden marcar vacaciones hasta el 15 de enero de 2027.</div>
     </div>
 
     <div class="calendar-grid" id="calendar"></div>
@@ -226,20 +235,20 @@
         const holidays = {
             "0-1": { name: "Año Nuevo", type: "holiday" },
             "0-6": { name: "Día de Reyes", type: "holiday" },
-            "2-19": { name: "San José", type: "holiday" },           // Marzo
-            "2-28": { name: "La Reconquista", type: "holiday" },     // Marzo
-            "3-2":  { name: "Jueves Santo", type: "holiday" },       // Abril
-            "3-3":  { name: "Viernes Santo", type: "holiday" },      // Abril
-            "4-1":  { name: "Fiesta del Trabajo", type: "holiday" }, // Mayo
-            "5-24": { name: "San Xoán", type: "holiday" },           // Junio
-            "6-25": { name: "Día Nacional de Galicia", type: "holiday" }, // Julio
-            "7-15": { name: "Asunción de la Virgen", type: "holiday" },   // Agosto
-            "7-17": { name: "San Roque", type: "holiday" },               // Agosto
-            "9-12": { name: "Fiesta Nacional de España", type: "holiday" }, // Octubre
-            "11-8": { name: "Inmaculada Concepción", type: "holiday" },     // Diciembre
-            "11-24": { name: "Nochebuena", type: "convenio" },              // Diciembre
-            "11-25": { name: "Navidad", type: "holiday" },                  // Diciembre
-            "11-31": { name: "Fin de año", type: "convenio" }               // Diciembre
+            "2-19": { name: "San José", type: "holiday" },
+            "2-28": { name: "La Reconquista", type: "holiday" },
+            "3-2":  { name: "Jueves Santo", type: "holiday" },
+            "3-3":  { name: "Viernes Santo", type: "holiday" },
+            "4-1":  { name: "Fiesta del Trabajo", type: "holiday" },
+            "5-24": { name: "San Xoán", type: "holiday" },
+            "6-25": { name: "Día Nacional de Galicia", type: "holiday" },
+            "7-15": { name: "Asunción de la Virgen", type: "holiday" },
+            "7-17": { name: "San Roque", type: "holiday" },
+            "9-12": { name: "Fiesta Nacional de España", type: "holiday" },
+            "11-8": { name: "Inmaculada Concepción", type: "holiday" },
+            "11-24": { name: "Nochebuena", type: "convenio" },
+            "11-25": { name: "Navidad", type: "holiday" },
+            "11-31": { name: "Fin de año", type: "convenio" }
         };
 
         const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
@@ -268,7 +277,6 @@
         function setMode(mode) {
             currentMode = mode;
             document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
-            // No quitamos active a save/load porque son acciones puntuales
             if(mode === 'prio') document.querySelector('.btn-prio').classList.add('active');
             if(mode === 'flex') document.querySelector('.btn-flex').classList.add('active');
             if(mode === 'erase') document.querySelector('.btn-erase').classList.add('active');
@@ -297,6 +305,7 @@
             if (el.classList.contains('holiday') || 
                 el.classList.contains('convenio') || 
                 el.classList.contains('weekend') ||
+                el.classList.contains('out-of-range') || // Bloquear si está fuera de rango
                 !el.classList.contains('day')) {
                 return;
             }
@@ -317,7 +326,7 @@
             }
             
             updateCounters();
-            saveLocal(); // Autoguardado
+            saveLocal();
         }
 
         // Generar Calendario
@@ -329,10 +338,9 @@
                 let currentYear = baseYear;
                 let monthIndex = i;
 
-                // Si i es 12, es Enero del año siguiente
                 if (i === 12) {
                     currentYear = baseYear + 1;
-                    monthIndex = 0; // Enero
+                    monthIndex = 0;
                 }
 
                 const monthDiv = document.createElement('div');
@@ -340,8 +348,6 @@
 
                 const header = document.createElement('div');
                 header.className = 'month-header';
-                
-                // Si es el año siguiente, cambiamos el estilo y el texto
                 if (currentYear > baseYear) {
                     header.textContent = `${monthNames[monthIndex]} ${currentYear}`;
                     header.classList.add('next-year');
@@ -389,8 +395,14 @@
                         dayDiv.classList.add('weekend');
                     }
 
-                    // Festivos
-                    // Usamos el formato "Mes-Día" para buscar en el objeto holidays.
+                    // 2. Limite 15 Enero 2027
+                    // Si es 2027 (monthIndex 0 es Enero) y dia > 15
+                    if (currentYear === 2027 && day > 15) {
+                        dayDiv.classList.add('out-of-range');
+                        dayDiv.title = "Fuera de plazo permitido";
+                    }
+
+                    // 3. Festivos
                     const holidayKey = `${monthIndex}-${day}`;
                     if (holidays[holidayKey]) {
                         dayDiv.classList.add(holidays[holidayKey].type);
@@ -408,7 +420,7 @@
             loadLocal();
         }
 
-        // --- SISTEMA DE GUARDADO (MEMORIA) ---
+        // --- SISTEMA DE GUARDADO ---
 
         // 1. Guardar en LocalStorage
         function saveLocal() {
@@ -421,7 +433,6 @@
             // Buscar todos los días marcados
             document.querySelectorAll('.vac-prio').forEach(el => data.prioDays.push(el.id));
             document.querySelectorAll('.vac-flex').forEach(el => data.flexDays.push(el.id));
-
             localStorage.setItem('vacaciones2026', JSON.stringify(data));
         }
 
@@ -452,7 +463,7 @@
             if (data.prioDays) {
                 data.prioDays.forEach(id => {
                     const el = document.getElementById(id);
-                    if (el) el.classList.add('vac-prio');
+                    if (el && !el.classList.contains('out-of-range')) el.classList.add('vac-prio');
                 });
             }
 
@@ -460,7 +471,7 @@
             if (data.flexDays) {
                 data.flexDays.forEach(id => {
                     const el = document.getElementById(id);
-                    if (el) el.classList.add('vac-flex');
+                    if (el && !el.classList.contains('out-of-range')) el.classList.add('vac-flex');
                 });
             }
             updateCounters();
@@ -468,12 +479,10 @@
 
         // 4. Descargar archivo JSON (Backup)
         function downloadData() {
-            // Aseguramos tener lo último
             saveLocal();
             const rawData = localStorage.getItem('vacaciones2026');
             const blob = new Blob([rawData], {type: "application/json"});
             const url = URL.createObjectURL(blob);
-            
             const a = document.createElement('a');
             a.href = url;
             a.download = "mis_vacaciones_2026.json";
@@ -486,7 +495,6 @@
         function loadFromFile(input) {
             const file = input.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
