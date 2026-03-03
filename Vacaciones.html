@@ -160,11 +160,14 @@
         
         /* Nuevo estado: Fuera de rango */
         .out-of-range {
-            background-color: #e0e0e0;
-            color: #a0a0a0;
+            background-color: transparent; /* Sin fondo */
+            color: #ccc; /* Texto gris claro */
             cursor: not-allowed;
-            opacity: 0.6;
-            text-decoration: line-through;
+            text-decoration: line-through; /* Tachado */
+        }
+        /* Eliminar el hover effect en los fuera de rango */
+        .out-of-range:hover {
+            background-color: transparent;
         }
 
         .vac-prio { background-color: var(--prio-color) !important; color: white; }
@@ -223,7 +226,7 @@
             <button class="mode-btn btn-load" onclick="document.getElementById('fileInput').click()">📂 Cargar Datos</button>
             <input type="file" id="fileInput" accept=".json" onchange="loadFromFile(this)">
         </div>
-        <div style="font-size: 0.8em; color: #888;">* Solo se pueden marcar vacaciones hasta el 15 de enero de 2027.</div>
+        <div style="font-size: 0.8em; color: #888;">* Los cambios se guardan automáticamente en este navegador. Usa "Guardar Datos" para crear una copia de seguridad.</div>
     </div>
 
     <div class="calendar-grid" id="calendar"></div>
@@ -301,7 +304,7 @@
         function handleDayClick(e) {
             const el = e.target;
             
-            // Si es festivo, fin de semana o vacío, no hacer nada
+            // Verificaciones de bloqueo
             if (el.classList.contains('holiday') || 
                 el.classList.contains('convenio') || 
                 el.classList.contains('weekend') ||
@@ -311,9 +314,6 @@
             }
 
             // Identificador único para guardar (año-mes-dia)
-            // Ya que tenemos 2026 y 2027, necesitamos saber el año.
-            // Lo recuperamos del atributo data o del contexto, pero como se generan dinámicamente:
-            // Vamos a añadir un atributo data-id al generar el calendario para facilitar esto.
 
             if (currentMode === 'erase') {
                 el.classList.remove('vac-prio', 'vac-flex');
@@ -390,7 +390,7 @@
                     const currentDayObj = new Date(currentYear, monthIndex, day);
                     const dayOfWeek = currentDayObj.getDay();
 
-                    // Fin de semana
+                    // 1. Fin de semana
                     if (dayOfWeek === 0 || dayOfWeek === 6) {
                         dayDiv.classList.add('weekend');
                     }
