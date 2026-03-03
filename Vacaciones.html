@@ -14,6 +14,7 @@
             --weekend-bg: #f8f9fa;
             --prio-color: #0d47a1; /* Azul Oscuro */
             --flex-color: #81d4fa; /* Azul Claro */
+            --today-border: #f1c40f; /* Amarillo Dorado */
             --border-color: #ddd;
         }
 
@@ -181,6 +182,8 @@
             margin: 1px;
             cursor: pointer;
             user-select: none;
+            position: relative;
+            box-sizing: border-box;
         }
 
         .day:hover { background-color: #eee; }
@@ -190,23 +193,29 @@
         .holiday { background-color: var(--holiday-color); color: white; cursor: not-allowed; }
         .convenio { background-color: var(--convenio-color); color: white; cursor: not-allowed; }
         
-        /* Nuevo estado: Fuera de rango */
+        /* Fuera de rango */
         .out-of-range {
-            background-color: transparent; /* Sin fondo */
-            color: #ccc; /* Texto gris claro */
-            cursor: not-allowed;
-            text-decoration: line-through; /* Tachado */
-        }
-        /* Eliminar el hover effect en los fuera de rango */
-        .out-of-range:hover {
             background-color: transparent;
+            color: #ccc;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+        .out-of-range:hover { background-color: transparent; }
+
+        /* ESTILO PARA EL DÍA ACTUAL (HOY) */
+        .today {
+            border: 3px solid var(--today-border);
+            font-weight: 900;
+            z-index: 5;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            transform: scale(1.1); /* Un poco más grande para destacar */
         }
 
         .vac-prio { background-color: var(--prio-color) !important; color: white; }
         .vac-flex { background-color: var(--flex-color) !important; color: #003; }
 
         /* Tooltip */
-        .holiday:hover::after, .convenio:hover::after {
+        .holiday:hover::after, .convenio:hover::after, .today:hover::after {
             content: attr(data-title);
             position: absolute;
             background: #333;
@@ -215,8 +224,11 @@
             border-radius: 4px;
             font-size: 12px;
             z-index: 10;
-            margin-top: -30px;
+            margin-top: -35px;
             pointer-events: none;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
         }
 
         /* Input oculto para cargar archivo */
@@ -266,6 +278,7 @@
         <div class="legend-item"><div class="legend-dot" style="background: var(--convenio-color)"></div> Día de Convenio</div>
         <div class="legend-item"><div class="legend-dot" style="background: var(--prio-color)"></div> Vac. Prioritarias</div>
         <div class="legend-item"><div class="legend-dot" style="background: var(--flex-color)"></div> Vac. Flexibles</div>
+        <div class="legend-item"><div class="legend-dot" style="border: 3px solid var(--today-border); width: 11px; height: 11px; background: transparent;"></div> Hoy</div>
     </div>
 
     <div class="calendar-grid" id="calendar"></div>
@@ -371,6 +384,12 @@
         function initCalendar() {
             calendarContainer.innerHTML = ''; 
             const totalMonthsToRender = 13;
+            
+            // Obtener fecha real del sistema del usuario
+            const realDate = new Date();
+            const realDay = realDate.getDate();
+            const realMonth = realDate.getMonth(); // 0-11
+            const realYear = realDate.getFullYear();
 
             for (let i = 0; i < totalMonthsToRender; i++) {
                 let currentYear = baseYear;
@@ -445,6 +464,15 @@
                     if (holidays[holidayKey]) {
                         dayDiv.classList.add(holidays[holidayKey].type);
                         dayDiv.setAttribute('data-title', holidays[holidayKey].name);
+                    }
+                    
+                    // 4. Marcar HOY (Verificación sin internet)
+                    if (currentYear === realYear && monthIndex === realMonth && day === realDay) {
+                        dayDiv.classList.add('today');
+                        // Si no tiene titulo previo, se lo ponemos
+                        if(!dayDiv.getAttribute('data-title')) {
+                             dayDiv.setAttribute('data-title', '¡HOY!');
+                        }
                     }
 
                     daysGrid.appendChild(dayDiv);
