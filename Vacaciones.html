@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vacaciones 2026</title>
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏝️</text><path d='M 30 60 Q 50 80 70 60' stroke='saddlebrown' stroke-width='4' fill='none' stroke-linecap='round' /><line x1='30' y1='60' x2='35' y2='45' stroke='saddlebrown' stroke-width='2' /><line x1='70' y1='60' x2='65' y2='45' stroke='saddlebrown' stroke-width='2' /></svg>">
+    
     <style>
         :root {
             --holiday-color: #e74c3c; /* Rojo festivo */
@@ -30,7 +33,7 @@
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             max-width: 800px;
-            margin: 0 auto 30px auto;
+            margin: 0 auto 20px auto;
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -99,6 +102,35 @@
             font-size: 0.9em;
             color: #666;
             margin-top: 5px;
+        }
+
+        /* --- LEYENDA DE COLORES --- */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            max-width: 800px;
+            margin: 0 auto 30px auto;
+            flex-wrap: wrap;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .legend-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
         }
 
         /* --- ESTILOS DEL CALENDARIO --- */
@@ -226,7 +258,14 @@
             <button class="mode-btn btn-load" onclick="document.getElementById('fileInput').click()">📂 Cargar Datos</button>
             <input type="file" id="fileInput" accept=".json" onchange="loadFromFile(this)">
         </div>
-        <div style="font-size: 0.8em; color: #888;">* Los cambios se guardan automáticamente en este navegador. Usa "Guardar Datos" para crear una copia de seguridad.</div>
+        <div style="font-size: 0.8em; color: #888;">* Los cambios se guardan automáticamente. Usa "Guardar Datos" para copia de seguridad.</div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background: var(--holiday-color)"></div> Festivo</div>
+        <div class="legend-item"><div class="legend-dot" style="background: var(--convenio-color)"></div> Día de Convenio</div>
+        <div class="legend-item"><div class="legend-dot" style="background: var(--prio-color)"></div> Vac. Prioritarias</div>
+        <div class="legend-item"><div class="legend-dot" style="background: var(--flex-color)"></div> Vac. Flexibles</div>
     </div>
 
     <div class="calendar-grid" id="calendar"></div>
@@ -308,13 +347,12 @@
             if (el.classList.contains('holiday') || 
                 el.classList.contains('convenio') || 
                 el.classList.contains('weekend') ||
-                el.classList.contains('out-of-range') || // Bloquear si está fuera de rango
+                el.classList.contains('out-of-range') || 
                 !el.classList.contains('day')) {
                 return;
             }
 
             // Identificador único para guardar (año-mes-dia)
-
             if (currentMode === 'erase') {
                 el.classList.remove('vac-prio', 'vac-flex');
             } else if (currentMode === 'prio') {
@@ -500,7 +538,7 @@
                 try {
                     const data = JSON.parse(e.target.result);
                     applyData(data);
-                    saveLocal(); // Guardar lo cargado en memoria local
+                    saveLocal();
                     alert("Datos cargados correctamente.");
                 } catch (err) {
                     alert("Error al leer el archivo. Asegúrate de que es el correcto.");
