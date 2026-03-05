@@ -100,9 +100,16 @@
         .btn-load { background-color: #8e44ad; color: white; }
 
         .counters {
-            font-size: 0.9em;
-            color: #666;
-            margin-top: 5px;
+            font-size: 1.1em;
+            color: #555;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .counter-item {
+            margin: 0 10px;
+            display: inline-block;
         }
 
         /* --- LEYENDA DE COLORES --- */
@@ -222,7 +229,7 @@
             padding: 5px 10px;
             border-radius: 4px;
             font-size: 12px;
-            font-weight: normal;
+            font-weight: normal; 
             z-index: 10;
             margin-top: -35px;
             pointer-events: none;
@@ -256,8 +263,11 @@
         </div>
 
         <div class="counters">
-            Uso Prioritarias: <strong id="countPrio">0</strong> | 
-            Uso Flexibles: <strong id="countFlex">0</strong>
+            <span class="counter-item">Prioritarias: <strong id="countPrio">0</strong></span> | 
+            <span class="counter-item">Flexibles: <strong id="countFlex">0</strong></span> | 
+            <span class="counter-item" style="border-left: 2px solid #ddd; padding-left: 15px; margin-left: 5px;">
+                Quedan: <strong id="countRemaining" style="font-size: 1.2em;">0</strong>
+            </span>
         </div>
 
         <div class="mode-selector">
@@ -316,6 +326,7 @@
         const flexInput = document.getElementById('flexInput');
         const countPrioDisplay = document.getElementById('countPrio');
         const countFlexDisplay = document.getElementById('countFlex');
+        const countRemainingDisplay = document.getElementById('countRemaining');
 
         // --- FUNCIONES PRINCIPALES ---
 
@@ -341,22 +352,33 @@
         function updateCounters() {
             const prioUsed = document.querySelectorAll('.vac-prio').length;
             const flexUsed = document.querySelectorAll('.vac-flex').length;
-            const prioLimit = parseInt(prioInput.value);
-            const flexLimit = parseInt(flexInput.value);
+            
+            const prioLimit = parseInt(prioInput.value) || 0;
+            const flexLimit = parseInt(flexInput.value) || 0;
+            const totalVacations = parseInt(totalInput.value) || 0;
+
+            const totalUsed = prioUsed + flexUsed;
+            const remaining = totalVacations - totalUsed;
 
             countPrioDisplay.textContent = `${prioUsed} / ${prioLimit}`;
             countFlexDisplay.textContent = `${flexUsed} / ${flexLimit}`;
+            countRemainingDisplay.textContent = remaining;
 
-            // Alertas visuales (color rojo si te pasas)
-            countPrioDisplay.style.color = (prioUsed > prioLimit) ? 'red' : '#666';
-            countFlexDisplay.style.color = (flexUsed > flexLimit) ? 'red' : '#666';
+            // Colores
+            countPrioDisplay.style.color = (prioUsed > prioLimit) ? 'red' : '#333';
+            countFlexDisplay.style.color = (flexUsed > flexLimit) ? 'red' : '#333';
+            
+            // Color para los restantes 
+            if (remaining < 0) {
+                countRemainingDisplay.style.color = 'red';
+            } else {
+                countRemainingDisplay.style.color = '#27ae60'; // Verde
+            }
         }
 
-        // Click en un día
         function handleDayClick(e) {
             const el = e.target;
             
-            // Verificaciones de bloqueo
             if (el.classList.contains('holiday') || 
                 el.classList.contains('convenio') || 
                 el.classList.contains('weekend') ||
@@ -469,7 +491,6 @@
                     // 4. Marcar HOY
                     if (currentYear === realYear && monthIndex === realMonth && day === realDay) {
                         dayDiv.classList.add('today');
-                        // Si no tiene titulo previo, se lo ponemos
                         if(!dayDiv.getAttribute('data-title')) {
                              dayDiv.setAttribute('data-title', '¡HOY!');
                         }
@@ -482,13 +503,12 @@
                 calendarContainer.appendChild(monthDiv);
             }
             
-            // Después de generar el HTML, cargamos los datos guardados
             loadLocal();
         }
 
         // --- SISTEMA DE GUARDADO ---
 
-        // 1. Guardar en LocalStorage
+        // Guardar en LocalStorage
         function saveLocal() {
             const data = {
                 totalDays: totalInput.value,
@@ -502,7 +522,7 @@
             localStorage.setItem('vacaciones2026', JSON.stringify(data));
         }
 
-        // 2. Cargar de LocalStorage
+        // Cargar de LocalStorage
         function loadLocal() {
             const saved = localStorage.getItem('vacaciones2026');
             if (saved) {
@@ -510,7 +530,7 @@
             }
         }
 
-        // 3. Aplicar datos al DOM
+        // Aplicar datos al DOM
         function applyData(data) {
             if (!data) return;
 
@@ -543,7 +563,7 @@
             updateCounters();
         }
 
-        // 4. Descargar archivo JSON (Backup)
+        // Descargar archivo JSON (Backup)
         function downloadData() {
             saveLocal();
             const rawData = localStorage.getItem('vacaciones2026');
@@ -557,7 +577,7 @@
             document.body.removeChild(a);
         }
 
-        // 5. Cargar desde archivo
+        // Cargar desde archivo
         function loadFromFile(input) {
             const file = input.files[0];
             if (!file) return;
