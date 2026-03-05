@@ -182,8 +182,8 @@
             margin: 1px;
             cursor: pointer;
             user-select: none;
-            position: relative;
-            box-sizing: border-box;
+            position: relative; 
+            box-sizing: border-box; 
         }
 
         .day:hover { background-color: #eee; }
@@ -207,14 +207,13 @@
             border: 3px solid var(--today-border);
             font-weight: 900;
             z-index: 5;
-            box-shadow: 0 0 10px rgba(0,0,0,0.2);
-            transform: scale(1.1); /* Un poco más grande para destacar */
+            transform: scale(1.1);
         }
 
         .vac-prio { background-color: var(--prio-color) !important; color: white; }
         .vac-flex { background-color: var(--flex-color) !important; color: #003; }
 
-        /* Tooltip */
+        /* Tooltips */
         .holiday:hover::after, .convenio:hover::after, .today:hover::after {
             content: attr(data-title);
             position: absolute;
@@ -223,6 +222,7 @@
             padding: 5px 10px;
             border-radius: 4px;
             font-size: 12px;
+            font-weight: normal;
             z-index: 10;
             margin-top: -35px;
             pointer-events: none;
@@ -388,7 +388,7 @@
             // Obtener fecha real del sistema del usuario
             const realDate = new Date();
             const realDay = realDate.getDate();
-            const realMonth = realDate.getMonth(); // 0-11
+            const realMonth = realDate.getMonth(); 
             const realYear = realDate.getFullYear();
 
             for (let i = 0; i < totalMonthsToRender; i++) {
@@ -466,7 +466,7 @@
                         dayDiv.setAttribute('data-title', holidays[holidayKey].name);
                     }
                     
-                    // 4. Marcar HOY (Verificación sin internet)
+                    // 4. Marcar HOY
                     if (currentYear === realYear && monthIndex === realMonth && day === realDay) {
                         dayDiv.classList.add('today');
                         // Si no tiene titulo previo, se lo ponemos
