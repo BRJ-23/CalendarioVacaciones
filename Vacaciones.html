@@ -100,16 +100,9 @@
         .btn-load { background-color: #8e44ad; color: white; }
 
         .counters {
-            font-size: 1.1em;
-            color: #555;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #eee;
-        }
-
-        .counter-item {
-            margin: 0 10px;
-            display: inline-block;
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
         }
 
         /* --- LEYENDA DE COLORES --- */
@@ -209,7 +202,7 @@
         }
         .out-of-range:hover { background-color: transparent; }
 
-        /* ESTILO PARA EL DÍA ACTUAL (HOY) */
+        /* Estilo para dia actual */
         .today {
             border: 3px solid var(--today-border);
             font-weight: 900;
@@ -229,7 +222,7 @@
             padding: 5px 10px;
             border-radius: 4px;
             font-size: 12px;
-            font-weight: normal; 
+            font-weight: normal;
             z-index: 10;
             margin-top: -35px;
             pointer-events: none;
@@ -238,7 +231,6 @@
             white-space: nowrap;
         }
 
-        /* Input oculto para cargar archivo */
         #fileInput { display: none; }
     </style>
 </head>
@@ -263,11 +255,9 @@
         </div>
 
         <div class="counters">
-            <span class="counter-item">Prioritarias: <strong id="countPrio">0</strong></span> | 
-            <span class="counter-item">Flexibles: <strong id="countFlex">0</strong></span> | 
-            <span class="counter-item" style="border-left: 2px solid #ddd; padding-left: 15px; margin-left: 5px;">
-                Quedan: <strong id="countRemaining" style="font-size: 1.2em;">0</strong>
-            </span>
+            Uso Prioritarias: <strong id="countPrio">0</strong> | 
+            Uso Flexibles: <strong id="countFlex">0</strong> | 
+            Quedan: <strong id="countRemaining">0</strong>
         </div>
 
         <div class="mode-selector">
@@ -469,26 +459,26 @@
                     const currentDayObj = new Date(currentYear, monthIndex, day);
                     const dayOfWeek = currentDayObj.getDay();
 
-                    // 1. Fin de semana
+                    // Fin de semana
                     if (dayOfWeek === 0 || dayOfWeek === 6) {
                         dayDiv.classList.add('weekend');
                     }
 
-                    // 2. Limite 15 Enero 2027
+                    // Limite 15 Enero 2027
                     // Si es 2027 (monthIndex 0 es Enero) y dia > 15
                     if (currentYear === 2027 && day > 15) {
                         dayDiv.classList.add('out-of-range');
                         dayDiv.title = "Fuera de plazo permitido";
                     }
 
-                    // 3. Festivos
+                    // Festivos
                     const holidayKey = `${monthIndex}-${day}`;
                     if (holidays[holidayKey]) {
                         dayDiv.classList.add(holidays[holidayKey].type);
                         dayDiv.setAttribute('data-title', holidays[holidayKey].name);
                     }
                     
-                    // 4. Marcar HOY
+                    // Marcar HOY
                     if (currentYear === realYear && monthIndex === realMonth && day === realDay) {
                         dayDiv.classList.add('today');
                         if(!dayDiv.getAttribute('data-title')) {
