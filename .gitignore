@@ -7,3 +7,4 @@ node_modules/
 /playwright/.cache/
 /playwright/.auth/
 /app/mis_vacaciones_2026.json
+.vscode/
