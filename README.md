@@ -21,7 +21,7 @@ Una aplicación web interactiva y sencilla para planificar y visualizar los día
 
 ### Usar la aplicación
 Al ser una aplicación web estática, no se requiere instalación para usarla.
-Simplemente abre el archivo `Vacaciones.html` en tu navegador web de preferencia.
+Simplemente selecciona el archivo `index.html` (ponle el nombre que prefieras) y abrelo en tu navegador web de preferencia.
 
 ### Ejecutar las pruebas (Playwright)
 Si deseas contribuir al código y asegurarte de que todo funciona correctamente, el proyecto cuenta con un entorno de pruebas automatizado.
