@@ -16,7 +16,7 @@ test('La vista web carga sin errores de consola', async ({ page }) => {
   });
 
   // 3. NAVEGAR DIRECTAMENTE A ARCHIVO HTML
-  const response = await page.goto('/Vacaciones.html');
+  const response = await page.goto('/index.html');
 
   // 4. Comprobar que el archivo existe y cargó bien
   expect(response.status()).toBe(200);
